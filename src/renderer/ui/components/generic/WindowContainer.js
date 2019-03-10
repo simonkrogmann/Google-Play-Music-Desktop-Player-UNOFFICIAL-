@@ -79,11 +79,7 @@ export default class WindowContainer extends Component {
   }
 
   closeWindow = () => {
-    if (this.props.isMainWindow && this.props.confirmClose && Settings.get('warnMinToTray', true) && Settings.get('minToTray', true)) {
-      this.props.confirmClose();
-    } else {
-      Emitter.fire('window:close', remote.getCurrentWindow().id);
-    }
+    Emitter.fire('window:close', remote.getCurrentWindow().id);
   }
 
   render() {

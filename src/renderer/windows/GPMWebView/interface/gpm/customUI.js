@@ -102,21 +102,9 @@ function installQuitButton() {
   });
 }
 
-function installAlarmButton() {
-  installSidebarButton('label-alarm', 'alarm', 'alarm', 0, '#', (e) => {
-    // Closes the sliding drawer
-    document.querySelector('paper-drawer-panel').setAttribute('selected', 'main');
-    Emitter.fireAtMain('alarm:show');
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
-  });
-}
-
 function installMainMenu() {
   installDesktopSettingsButton();
   installQuitButton();
-  installAlarmButton();
 }
 
 /* eslint-disable max-len, no-multi-str */
@@ -161,10 +149,6 @@ function installNowPlayingMenu() {
   installNowPlayingSeperator();
   installNowPlayingButton('label-pause-after-song', ':gpmdppause', () => {
     Emitter.fireAtGoogle('pauseAfter:show');
-  });
-  installNowPlayingSeperator();
-  installNowPlayingButton('label-show-lyrics', ':gpmdplyrics', () => {
-    Emitter.fireAtMain('lyrics:show');
   });
 }
 

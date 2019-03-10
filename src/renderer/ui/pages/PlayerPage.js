@@ -2,19 +2,15 @@ import { remote, shell } from 'electron';
 import React, { Component } from 'react';
 import { parse as parseURL } from 'url';
 
-import LyricsViewer from '../components/generic/LyricsViewer';
 import OfflineWarning from '../components/generic/OfflineWarning';
 import WebView from '../components/generic/WebView';
 import WindowContainer from '../components/generic/WindowContainer';
 
 // Modals
 import AboutModal from '../components/modals/AboutModal';
-import AlarmModal from '../components/modals/AlarmModal';
-import APICodeModal from '../components/modals/APICodeModal';
 import ConfirmTrayModal from '../components/modals/ConfirmTrayModal';
 import GoToModal from '../components/modals/GoToModal';
 import OpenPortModal from '../components/modals/OpenPortModal';
-import UpdateModal from '../components/modals/UpdateModal';
 import UninstallV2Modal from '../components/modals/UninstallV2Modal';
 import WelcomeNewVersionModal from '../components/modals/WelcomeNewVersionModal';
 
@@ -128,11 +124,6 @@ export default class PlayerPage extends Component {
     return (
       <WindowContainer isMainWindow title={process.platform === 'darwin' ? this.state.title : ''} confirmClose={this._confirmCloseWindow}>
         <div className="drag-handle-large"></div>
-        <div className={`loader ${this.state.loading ? '' : 'hidden'}`}>
-          <svg className="circular" viewBox="25 25 50 50">
-            <circle className="path" cx="50" cy="50" r="20" fill="none" strokeWidth="2" strokeMiterlimit="10" />
-          </svg>
-        </div>
         <WebView
           ref="view"
           src={this.state.webviewTarget}
@@ -145,15 +136,11 @@ export default class PlayerPage extends Component {
           newWindow={this._newWindow}
         />
         <OfflineWarning />
-        <LyricsViewer />
 
         <AboutModal />
-        <AlarmModal />
-        <APICodeModal />
         <ConfirmTrayModal ref="trayModal" />
         <GoToModal />
         <OpenPortModal />
-        <UpdateModal />
         <UninstallV2Modal />
         <WelcomeNewVersionModal />
       </WindowContainer>

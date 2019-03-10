@@ -4,7 +4,6 @@ import React from 'react';
 import chai from 'chai';
 import { mount } from 'enzyme';
 
-import LastFMTab from '../../../../build/renderer/ui/components/settings/tabs/LastFMTab';
 import materialUIContext from '../_materialUIContext';
 import mockSettings, { fakeSettings, getVars, mockEvent } from '../_mockSettings';
 

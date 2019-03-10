@@ -1,10 +1,5 @@
 import { BrowserWindow } from 'electron';
 import path from 'path';
-import AutoLaunch from 'auto-launch';
-
-const appLauncher = new AutoLaunch({
-  name: 'Google Play Music Desktop Player',
-});
 
 export const showDesktopSettings = () => {
   if (WindowManager.getAll('settings').length > 0) {
@@ -85,13 +80,6 @@ Emitter.on('settings:set', (event, details) => {
       break;
     case 'scrollLyrics':
       Emitter.sendToAll('settings:set:scrollLyrics', details.value);
-      break;
-    case 'auto-launch':
-      if (details.value === true) {
-        appLauncher.enable();
-      } else {
-        appLauncher.disable();
-      }
       break;
     default:
       break;

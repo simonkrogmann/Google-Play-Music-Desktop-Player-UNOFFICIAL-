@@ -1,7 +1,5 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
-import ua from 'universal-analytics';
-import uuid from 'uuid';
 import winston from 'winston';
 
 import configureApp from './main/configureApp';
@@ -14,16 +12,11 @@ import WindowManagerClass from './main/utils/WindowManager';
 import PlaybackAPIClass from './main/utils/PlaybackAPI';
 import I3IpcHelperClass from './main/utils/I3IpcHelper';
 
-import handleStartupEvent from './squirrel';
-
 import { updateShortcuts } from './main/utils/_shortcutManager';
 
 app.setAppUserModelId('com.marshallofsound.gpmdp.core');
 
 (() => {
-  if (handleStartupEvent()) {
-    return;
-  }
 
   // Keep a global reference of the window object, if you don't, the window will
   // be closed automatically when the JavaScript object is garbage collected.
@@ -79,12 +72,6 @@ app.setAppUserModelId('com.marshallofsound.gpmdp.core');
   global.Emitter = new EmitterClass();
   global.WindowManager = new WindowManagerClass();
   global.PlaybackAPI = new PlaybackAPIClass();
-
-  // UA for GA
-  // This is for user reporting
-  Settings.set('uuid', Settings.get('uuid', uuid.v4()));
-  const user = ua('UA-44220619-5', Settings.get('uuid'));
-  user.pageview(`/${app.getVersion()}`).send();
 
   // Replace the logger's levels with those from settings.
   Logger.transports.console.level = Settings.get('consoleLogLevel', defaultConsoleLogLevel);

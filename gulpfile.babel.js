@@ -8,7 +8,6 @@ import babel from 'gulp-babel';
 import clean from 'gulp-clean';
 import concat from 'gulp-concat';
 import cssmin from 'gulp-cssmin';
-import { createWindowsInstaller as electronInstaller } from 'gpmdp-electron-winstaller';
 import fs from 'fs';
 import globber from 'glob';
 import header from 'gulp-header';
@@ -17,7 +16,6 @@ import packager from 'electron-packager';
 import nodePath from 'path';
 import replace from 'gulp-replace';
 import runSequence from 'run-sequence';
-import electronWindowsStore from 'electron-windows-store';
 // import uglify from 'gulp-uglify';
 import rebuild from 'electron-rebuild';
 import rasterImages from './vendor/svg_raster';
@@ -361,7 +359,7 @@ const generateGulpLinuxDistroTask = (prefix, name, arch) => {
     const defaults = {
       bin: packageJSON.productName,
       dest: `dist/installers/${name}`,
-      depends: ['libappindicator1', 'avahi-daemon'],
+      depends: ['libappindicator1'],
       maintainer: `${packageJSON.author.name} <${packageJSON.author.email}>`,
       homepage: packageJSON.homepage,
       icon: 'build/assets/img/main.png',

@@ -2,38 +2,13 @@ import { app } from 'electron';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import uuid from 'uuid';
 import { spawnSync } from 'child_process';
 import WebSocket, { Server as WebSocketServer } from 'ws';
 
 let server;
 let oldTime = {};
-let uniqID = uuid.v4();
 
-let runas = () => {};
-if (process.platform === 'win32') {
-  runas = require('runas');
-}
-
-let mdns;
-try {
-  mdns = require('mdns');
-} catch (e) {
-  Logger.error('Failed to load bonjour with error: %j', e);
-  console.error('Bonjour is required to use Chromecast Support or to enable ZeroConf for the PlaybackAPI'); // eslint-disable-line
-  if (process.platform === 'win32') {
-    console.error('On windows you need to install Bonjour Print Services'); // eslint-disable-line
-  } else if (process.platform === 'darwin') {
-    console.error('One macOS Bonjour should "just work" so if you see this you have much bigger problems'); // eslint-disable-line
-  } else {
-    console.error('On linux you need to install "avahi"'); // eslint-disable-line
-  }
-  if (process.platform === 'win32') {
-    Emitter.sendToWindowsOfName('main', 'bonjour-install');
-  }
-}
-
-const changeEvents = ['track', 'state', 'rating', 'lyrics', 'shuffle', 'repeat', 'playlists', 'queue', 'search-results', 'library', 'volume'];
+const changeEvents = ['track', 'state', 'shuffle', 'repeat', 'volume'];
 const API_VERSION = JSON.parse(fs.readFileSync(path.resolve(`${__dirname}/../../../../package.json`))).apiVersion;
 
 let ad;
@@ -51,31 +26,6 @@ changeEvents.forEach((channel) => {
       connectClient.channel(channel === 'state' ? 'playState' : channel, newValue);
     }
   });
-});
-
-const settingsChangeEvents = ['themeColor', 'theme', 'themeType'];
-
-settingsChangeEvents.forEach((channel) => {
-  Settings.onChange(channel, (newValue) => {
-    if (server && server.broadcast) {
-      server.broadcast(`settings:${channel}`, newValue);
-    }
-    if (connectClient) {
-      connectClient.channel(`settings:${channel}`, newValue);
-    }
-  });
-});
-
-PlaybackAPI.on('change:time', (timeObj) => {
-  if (JSON.stringify(timeObj) !== JSON.stringify(oldTime)) {
-    oldTime = timeObj;
-    if (server && server.broadcast) {
-      server.broadcast('time', timeObj);
-    }
-    if (connectClient) {
-      connectClient.channel('time', timeObj);
-    }
-  }
 });
 
 const requireCode = (ws) => {
@@ -97,23 +47,10 @@ const sendInitialBurst = (ws) => {
   ws.channel('playState', PlaybackAPI.isPlaying());
   ws.channel('shuffle', PlaybackAPI.currentShuffle());
   ws.channel('repeat', PlaybackAPI.currentRepeat());
-  ws.channel('queue', PlaybackAPI.getQueue());
-  ws.channel('search-results', PlaybackAPI.getResults());
   ws.channel('volume', PlaybackAPI.getVolume());
   if (PlaybackAPI.currentSong(true)) {
     ws.channel('track', PlaybackAPI.currentSong(true));
-    ws.channel('time', PlaybackAPI.currentTime());
-    ws.channel('lyrics', PlaybackAPI.currentSongLyrics(true));
-    ws.channel('rating', PlaybackAPI.getRating());
   }
-  if (!Settings.__TEST__) {
-    settingsChangeEvents.forEach((channel) => {
-      ws.channel(`settings:${channel}`, Settings.get(channel));
-    });
-  }
-  // We send library and playlists last as they take a while to stringify
-  ws.channel('playlists', PlaybackAPI.getPlaylists());
-  ws.channel('library', PlaybackAPI.getLibrary());
 };
 
 const addWSPrototypes = (ws) => {
@@ -139,25 +76,6 @@ const handleWSMessage = (ws) =>
       if (command.namespace && command.method) {
         const args = command.arguments || [];
         // Attempt to handle client connectection and authorization
-        if (command.namespace === 'connect' && command.method === 'connect') {
-          if (Settings.get('authorized_devices', []).indexOf(args[1]) > -1) {
-            Emitter.sendToGooglePlayMusic('register_controller', {
-              name: args[0],
-            });
-            ws.authorized = true; // eslint-disable-line
-          } else if (args[1] === authCode) {
-            const code = uuid.v4();
-            Settings.set('authorized_devices', Settings.get('authorized_devices', []).concat([code]));
-            Emitter.sendToWindowsOfName('main', 'hide:code_controller');
-            ws.json({
-              channel: 'connect',
-              payload: code,
-            });
-          } else {
-            requireCode(ws);
-          }
-          return;
-        }
         if (command.namespace === 'inital_burst') {
           sendInitialBurst(ws);
           return;
@@ -166,14 +84,9 @@ const handleWSMessage = (ws) =>
         if (!Array.isArray(args)) {
           throw Error('Bad arguments');
         }
-        if (!ws.authorized) {
-          requireCode(ws);
-          return;
-        }
         Emitter.sendToGooglePlayMusic('execute:gmusic', {
           namespace: command.namespace,
           method: command.method,
-          requestID: command.requestID || uniqID,
           args,
         });
         if (typeof command.requestID !== 'undefined') {
@@ -181,7 +94,6 @@ const handleWSMessage = (ws) =>
             ws.json(result);
           });
         }
-        uniqID = uuid.v4();
       } else {
         throw Error('Bad command');
       }
@@ -191,31 +103,6 @@ const handleWSMessage = (ws) =>
     }
   };
 
-if (Settings.get('__gpmdp_connect__')) {
-  const reconnectConnectClient = () => {
-    const email = Settings.get('gpmdp_connect_email');
-    if (!email) return;
-    if (connectClient) {
-      connectClient.close();
-      connectClient = null;
-    }
-    connectClient = new WebSocket('wss://connect.gpmdp.xyz');
-    addWSPrototypes(connectClient);
-    connectClient.on('open', () => {
-      connectClient.json({ type: 'connect', email, clientType: 'player' });
-      connectClient.on('message', handleWSMessage(connectClient));
-    });
-    connectClient.on('error', () => {});
-    connectClient.on('close', () => {
-      if (connectClientShouldReconnect) {
-        Logger.warn('Attempting to reconnect to wss://connect.gpmdp.xyz');
-        setTimeout(() => reconnectConnectClient(), 500);
-      }
-    });
-  };
-  Settings.onChange('gpmdp_connect_email', reconnectConnectClient);
-  reconnectConnectClient();
-}
 
 const enableAPI = () => {
   let portOpen = true;
@@ -249,19 +136,6 @@ const enableAPI = () => {
       ad = null;
     }
 
-    try {
-      ad = mdns.createAdvertisement(mdns.tcp('GPMDP'), global.API_PORT || process['env'].GPMDP_API_PORT || 5672, { // eslint-disable-line
-        name: os.hostname(),
-        txtRecord: {
-          API_VERSION,
-        },
-      });
-
-      ad.start();
-    } catch (e) {
-      Logger.error('Could not initialize bonjour service with error: %j', e);
-    }
-    if (ad) ad.on('error', () => {});
 
     server.broadcast = (channel, data) => {
       server.clients.forEach((client) => {

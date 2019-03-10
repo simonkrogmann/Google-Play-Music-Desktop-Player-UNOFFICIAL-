@@ -28,18 +28,9 @@ class PlaybackAPI extends EventEmitter {
     Emitter.on('playback:isPaused', this._setPlaying.bind(this, false));
     Emitter.on('playback:isStopped', this._setPlaying.bind(this, false));
 
-    Emitter.on('change:playback-time', (event, timeObj) => this._setTime(timeObj.current, timeObj.total));
     Emitter.on('change:volume', (event, newVolume) => this._setVolume(newVolume));
-    // we throttle this function because of a bug in gmusic.js
-    // ratings are received multiple times here in a couple of ms
-    // to avoid writing the file 5+ times we throttle it to 500ms max
-    Emitter.on('change:rating', _.throttle((event, details) => this._setRating(details), 500));
     Emitter.on('change:shuffle', _.throttle((event, mode) => this._setShuffle(mode)), 20);
     Emitter.on('change:repeat', _.throttle((event, mode) => this._setRepeat(mode)), 20);
-    Emitter.on('change:playlists', _.throttle((event, playlists) => this._setPlaylists(playlists)), 20);
-    Emitter.on('change:queue', _.throttle((event, queue) => this._setQueue(queue)), 20);
-    Emitter.on('change:search-results', _.throttle((event, results) => this._setResults(results)), 20);
-    Emitter.on('change:library', _.throttle((event, library) => this._setLibrary(library)), 20);
   }
 
   reset() {
@@ -166,7 +157,6 @@ class PlaybackAPI extends EventEmitter {
       total: totalTime,
     };
     this._fire('change:time', this.data.time);
-    this._save();
   }
 
   _setVolume(newVolume) {

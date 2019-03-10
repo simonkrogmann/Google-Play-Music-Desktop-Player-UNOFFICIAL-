@@ -60,7 +60,6 @@ const waitForExternal = setInterval(() => {
       window.GMusic = GMusic;
       // Google Play Music
       require('gmusic-ui.js')(GMusic);
-      require('gmusic-mini-player.js')(GMusic);
       const GMusicTheme = require('gmusic-theme.js');
 
       window.GPM = new GMusic();
