@@ -153,6 +153,7 @@ const enableAPI = () => {
       // Send initial PlaybackAPI Values
       sendInitialBurst(ws);
     });
+    const child = spawnSync('pkill', ['-SIGUSR2', 'qtmenu']);
   });
 
   server.on('error', () => {
